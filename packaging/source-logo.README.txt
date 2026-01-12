@@ -1,0 +1,5 @@
+Place your source logo here as `source-logo.png` (preferred) to generate MSIX tile assets.
+
+Example target path:
+`Projects/gemi-hotkey-codex/packaging/source-logo.png`
+
