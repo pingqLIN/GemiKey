@@ -1,6 +1,7 @@
 # GemiKey
 
-**GemiKey** 是一個概念驗證專案（PoC），旨在探索並實作 Windows 11「Copilot 鍵」的自訂行為。透過微軟官方的 `Copilot hardware key provider` 規格，將實體鍵盤上的 Copilot 鍵重新導向至 Google Gemini（或其他自訂應用程式），使其能出現在 Windows 設定的 App Picker 中。
+**GemiKey** 概念驗證（PoC），探索並實作 Windows 11「Copilot 鍵」的自訂行為。
+微軟官方 `Copilot hardware key provider` 將實體鍵盤上的 Copilot 鍵重新導向至 Google Gemini（或其他自訂應用程式），使其能出現在 Windows 設定的 App Picker 中。
 
 ## Project Background
 
@@ -49,7 +50,7 @@ In the application's `Package.appxmanifest`, you must add `uap3:AppExtension`, a
     </Application>
   </Applications>
 </Package>
-
+```
 * `DisplayName`: The name displayed in the Windows Settings App Picker (e.g., Gemini).
 * `Description`: Descriptive text for the application.
 
