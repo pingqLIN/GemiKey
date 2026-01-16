@@ -2,35 +2,35 @@
 
 **GemiKey** 是一個概念驗證專案（PoC），旨在探索並實作 Windows 11「Copilot 鍵」的自訂行為。透過微軟官方的 `Copilot hardware key provider` 規格，將實體鍵盤上的 Copilot 鍵重新導向至 Google Gemini（或其他自訂應用程式），使其能出現在 Windows 設定的 App Picker 中。
 
-## 專案背景
+## Project Background
 
-Windows 11 允許使用者在設定中變更「Copilot 鍵」觸發的行為，路徑如下：
+Windows 11 allows users to change the behavior triggered by the "Copilot key" in Settings, through the following path:
 
-`設定 (Settings)` \> `個人化 (Personalization)` \> `文字輸入 (Text input)` \> `自訂鍵盤上的 Copilot 鍵 (Customize Copilot key on keyboard)`
+`Settings` \> `Personalization` \> `Text input` \> `Customize Copilot key on keyboard`
 
-然而，該選單僅會列出符合特定規範的應用程式。本專案即是為了解析該規範並提供實作範本。
+However, this menu only lists applications that meet specific specifications. This project aims to understand these specifications and provide an implementation template.
 
-## 技術原理與規格
+## Technical Specifications
 
-要讓應用程式出現在 Windows 的 Copilot 鍵選項清單中，**不需要**修改 Windows 系統檔，而是應用程式本身需滿足以下三個條件：
+To make an application appear in Windows' Copilot key option list, you do **not** need to modify Windows system files. Instead, the application itself must meet the following three conditions:
 
-1. **MSIX 封裝**：應用程式必須以 MSIX 格式打包（支援 Desktop、UWP、WinUI 3 等架構）。
-2. **Manifest 註冊**：在 `Package.appxmanifest` 中宣告支援 `Microsoft Copilot hardware key provider` 擴充。
-3. **數位簽章**：應用程式必須經過簽署（Signed），否則 Windows 不會將其視為有效的 Copilot 鍵目標。
+1. **MSIX Packaging**: The application must be packaged in MSIX format (supports Desktop, UWP, WinUI 3, and other frameworks).
+2. **Manifest Registration**: Declare support for the `Microsoft Copilot hardware key provider` extension in `Package.appxmanifest`.
+3. **Digital Signature**: The application must be signed; otherwise, Windows will not consider it a valid Copilot key target.
 
-### 解決方案架構
+### Solution Architecture
 
-針對「Gemini」的整合，本專案採用以下輕量化策略：
+For integrating "Gemini," this project adopts the following lightweight strategy:
 
-- 建立一個輕量級 Provider App（例如：使用 WebView2 開啟 `https://gemini.google.com/` 的殼層程式）。
-- 依據規格註冊為 Provider。
-- 在系統選單中以「Gemini」名稱顯示。
+- Create a lightweight Provider App (e.g., a shell program using WebView2 to open `https://gemini.google.com/`).
+- Register as a Provider according to the specification.
+- Display with the name "Gemini" in the system menu.
 
-## 開發者指南
+## Developer Guide
 
-### 1\. Package Manifest 設定
+### 1\. Package Manifest Configuration
 
-在應用程式的 `Package.appxmanifest` 中，必須加入 `uap3:AppExtension`，且 `Name` 屬性必須指定為 `com.microsoft.windows.copilotkeyprovider`。
+In the application's `Package.appxmanifest`, you must add `uap3:AppExtension`, and the `Name` attribute must be specified as `com.microsoft.windows.copilotkeyprovider`.
 
 ```xml
 <Package ... xmlns:uap3="[http://schemas.microsoft.com/appx/manifest/uap/windows10/3](http://schemas.microsoft.com/appx/manifest/uap/windows10/3)" ...>
@@ -50,60 +50,60 @@ Windows 11 允許使用者在設定中變更「Copilot 鍵」觸發的行為，�
   </Applications>
 </Package>
 
-* `DisplayName`：即為顯示在 Windows 設定 App Picker 中的名稱（如：Gemini）。
-* `Description`：應用程式的描述文字。
+* `DisplayName`: The name displayed in the Windows Settings App Picker (e.g., Gemini).
+* `Description`: Descriptive text for the application.
 
-### 2\. 簽章要求 (Signing)
+### 2\. Signing Requirements
 
-官方文件明確指出：
+The official documentation explicitly states:
 
-"Provider apps must be signed in order to be enabled as a target of the Microsoft Copilot hardware key." (應用程式必須簽章才能被啟用為目標。)
+"Provider apps must be signed in order to be enabled as a target of the Microsoft Copilot hardware key."
 
-實務上的簽章策略如下：
+Practical signing strategies:
 
-* **開發階段**：可使用自簽憑證（Self-signed certificate）並將憑證安裝至「受信任的根憑證授權單位」。
-* **發布階段**：需使用正式的程式碼簽署憑證。
+* **Development Phase**: You can use a self-signed certificate and install the certificate in "Trusted Root Certification Authorities."
+* **Release Phase**: You need to use an official code signing certificate.
 
-## 除錯與驗證
+## Debugging and Verification
 
-若應用程式未出現在清單中，可透過以下 Registry 機碼檢查系統狀態與目前的綁定情形。
+If the application does not appear in the list, you can check the system status and current bindings through the following Registry key.
 
-**登錄檔路徑：**
+**Registry Path:**
 
 `HKEY_CURRENT_USER\Software\Microsoft\Windows\Shell\BrandedKey`
 
-| 機碼名稱 | 說明 | 可能值 |
+| Key Name | Description | Possible Values |
 | :---- | :---- | :---- |
-| **BrandedKeyChoiceType** | 目前按鍵行為類型 | `Search` (搜尋) \`App\` (自訂 App) \`AppEnforcedByPolicy\` (政策強制) |
-| **AppAumid** | 目前綁定的 App ID | 目標 App 的 AUMID (Application User Model ID) |
+| **BrandedKeyChoiceType** | Current key behavior type | `Search` (Search) \`App\` (Custom App) \`AppEnforcedByPolicy\` (Policy Enforced) |
+| **AppAumid** | Currently bound App ID | Target App's AUMID (Application User Model ID) |
 
-**常見失敗原因：**
+**Common Failure Reasons:**
 
-1. App 未安裝或需重新安裝（以觸發系統掃描 Manifest）。
-2. App 未正確簽章。
-3. Manifest 中的 Extension Name 拼寫錯誤。
+1. App is not installed or needs to be reinstalled (to trigger system Manifest scanning).
+2. App is not properly signed.
+3. Extension Name in the Manifest is misspelled.
 
-## 專案路線圖與 MVP
+## Project Roadmap and MVP
 
-目前的最小可行性產品（MVP）目標為「讓設定頁能選到 Gemini」。
+The current Minimum Viable Product (MVP) goal is to "make Gemini selectable in the Settings page."
 
-### 技術選項評估
+### Technical Options Evaluation
 
-* **WPF \+ WebView2**：✅ **(目前採用)** 直覺、相容性高，適合快速開發。
-* **WinUI 3 (Windows App SDK)**：貼近原生 Windows 11 UI，但專案架構較重。
-* **最小化 EXE \+ MSIX**：僅啟動預設瀏覽器導向網址，維護成本最低。
+* **WPF \+ WebView2**: ✅ **(Currently Adopted)** Intuitive, high compatibility, suitable for rapid development.
+* **WinUI 3 (Windows App SDK)**: Closer to native Windows 11 UI, but the project architecture is heavier.
+* **Minimized EXE \+ MSIX**: Only launches the default browser to the URL, with the lowest maintenance cost.
 
-### 目前進度 (Current Status)
+### Current Status
 
-已建立基於 WPF \+ WebView2 的 MVP：
+An MVP based on WPF \+ WebView2 has been established:
 
-* **原始碼**：`Projects/gemikey/src/GemiHotkeyProvider.App`
-* **文件指引**：`Projects/gemikey/docs/provider-app-wpf-webview2.md`
-* **Manifest 範本**：`Projects/gemikey/packaging/copilot-key-provider.extension.xml`
+* **Source Code**: `Projects/gemikey/src/GemiHotkeyProvider.App`
+* **Documentation Guide**: `Projects/gemikey/docs/provider-app-wpf-webview2.md`
+* **Manifest Template**: `Projects/gemikey/packaging/copilot-key-provider.extension.xml`
 
-## 參考文件 (Microsoft Official)
+## References (Microsoft Official)
 
-* [Windows 鍵盤快速鍵與 Copilot 鍵說明](https://support.microsoft.com/en-us/windows/keyboard-shortcuts-in-windows-dcc61a57-8ff0-cffe-9796-cb9706c75eec)
-* [IT 管理：管理 Windows Copilot](https://learn.microsoft.com/en-us/windows/client-management/manage-windows-copilot)
-* [開發者規格：Microsoft Copilot hardware key provider](https://learn.microsoft.com/en-us/windows/apps/develop/windows-integration/microsoft-copilot-key-provider)
+* [Windows Keyboard Shortcuts and Copilot Key Description](https://support.microsoft.com/en-us/windows/keyboard-shortcuts-in-windows-dcc61a57-8ff0-cffe-9796-cb9706c75eec)
+* [IT Management: Manage Windows Copilot](https://learn.microsoft.com/en-us/windows/client-management/manage-windows-copilot)
+* [Developer Specification: Microsoft Copilot hardware key provider](https://learn.microsoft.com/en-us/windows/apps/develop/windows-integration/microsoft-copilot-key-provider)
 ```
